@@ -1,5 +1,5 @@
 """
-Author: Siddharth Srivastava
+Author: Jaryab S Khan
 """
 import json
 from station import Station
