@@ -4,6 +4,10 @@ from exceptions import UnknownLineError, UnknownStationError, InvalidPredictionE
 from heap import Heap
 from trie import Trie
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 488def9 (Updated Code)
 class Network:
     def __init__(self):
         self.lines = {}
@@ -18,7 +22,10 @@ class Network:
     def _normalise(text):
         text = unicodedata.normalize("NFKD", text).casefold()
         text = "".join(ch for ch in text if not unicodedata.combining(ch))
+<<<<<<< HEAD
         # Punctuation becomes spaces, repeated whitespace collapses.
+=======
+>>>>>>> 488def9 (Updated Code)
         text = re.sub(r"[^a-z0-9]+", " ", text)
         return " ".join(text.split())
 
@@ -31,6 +38,7 @@ class Network:
         except KeyError:
             raise UnknownLineError(f"Unknown line: {line_id}") from None
 
+<<<<<<< HEAD
     def add_station(self, station):
         # Keep one canonical station per station_id.
         if station.station_id in self.stations:
@@ -40,6 +48,26 @@ class Network:
         normalised = self._normalise(station.station_name)
         if normalised:
             self._station_trie.insert(normalised, station)
+=======
+    def _rebuild_station_trie(self):
+        """Rebuild the name index from canonical station records.
+
+        Rebuilding on replacement removes the old name and indexes the new
+        name. The station dictionary remains the single source of truth.
+        """
+        trie = Trie()
+        for current_station in self.stations.values():
+            normalised = self._normalise(current_station.station_name)
+            if normalised:
+                trie.insert(normalised, current_station)
+        self._station_trie = trie
+
+    def add_station(self, station):
+        # Replace by station_id, then rebuild the derived name index. This
+        # keeps the trie synchronised even when the station name changes.
+        self.stations[station.station_id] = station
+        self._rebuild_station_trie()
+>>>>>>> 488def9 (Updated Code)
 
     def get_station(self, station_id):
         try:
@@ -65,11 +93,20 @@ class Network:
         if not isinstance(prefix, str):
             return []
         normalised = self._normalise(prefix)
+<<<<<<< HEAD
         # Prefix normalisation removes punctuation and case differences.
         matches = self._station_trie.search_by_prefix(normalised)
         # Replace stale object references if a station ID was overwritten.
         current = {self.stations[s.station_id].station_id: self.stations[s.station_id]
                    for s in matches if s.station_id in self.stations}
+=======
+        matches = self._station_trie.search_by_prefix(normalised)
+        # The trie is rebuilt from canonical records, so these are current
+        # station objects. Deduplicate by station ID as a defensive measure.
+        current = {}
+        for station in matches:
+            current[station.station_id] = self.stations[station.station_id]
+>>>>>>> 488def9 (Updated Code)
         return sorted(current.values(), key=lambda s: s.station_name.casefold())
 
     @staticmethod
@@ -90,7 +127,11 @@ class Network:
         return self._query(self._line_heaps, line_id, k)
 
     def next_arrivals_by_station_and_line(self, station_id, line_id, k):
+<<<<<<< HEAD
         station = self.get_station(station_id)
+=======
+        self.get_station(station_id)
+>>>>>>> 488def9 (Updated Code)
         line = self.get_line(line_id)
         if station_id not in line.get_stations():
             raise InvalidPredictionError("The specified line does not serve this station")
