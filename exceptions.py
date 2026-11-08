@@ -27,3 +27,6 @@ class HeapError(DataStructureError):
 
 class TrieError(DataStructureError):
     pass
+    
+class BranchError(TubeError):
+    pass
