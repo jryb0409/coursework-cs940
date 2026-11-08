@@ -1,4 +1,5 @@
 from exceptions import InvalidStationDataError
+from exceptions import BranchError
 
 class Branch:
     def __init__(self, branch_id: int, next_branch_ids: list[int]):
