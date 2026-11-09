@@ -1,11 +1,14 @@
 from exceptions import InvalidPredictionError
 
+
 class Prediction:
+    # Initialise a prediction with train, station and arrival information
     def __init__(self, vehicle_id: str, naptan_id: str, line_id: str,
                  platform_name: str, destination_id: str,
                  time_to_station: int, current_location: str):
         if not isinstance(time_to_station, int) or time_to_station < 0:
             raise InvalidPredictionError("time_to_station must be a non-negative integer")
+
         self.vehicle_id = str(vehicle_id)
         self.naptan_id = str(naptan_id)
         self.line_id = str(line_id)
@@ -14,6 +17,7 @@ class Prediction:
         self.time_to_station = time_to_station
         self.current_location = str(current_location)
 
+    # Compare predictions by arrival time, using vehicle ID to break ties
     def __lt__(self, other):
         if not isinstance(other, Prediction):
             return NotImplemented
