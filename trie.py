@@ -1,5 +1,6 @@
 from exceptions import TrieError
 
+# Represents an individual node in the trie
 class _Node:
 
     __slots__ = ("children", "objects", "object_ids")
@@ -29,15 +30,13 @@ class Trie:
     def insert(self, key: str, obj) -> None:
         self._validate_key(key)
 
-        # The empty-prefix result contains each object only once, in the order
-        # in which it was first inserted into this trie.
+        # Keep a separate list of unique objects in insertion order
         marker = id(obj)
         if marker not in self._all_ids:
             self._all_ids.add(marker)
             self._all.append(obj)
 
-        # Index every word independently. Each node records an object only
-        # once, even when multiple words/keys belonging to it share a prefix.
+        # Index each word separately, avoiding duplicate objects at shared prefixes
         for word in key.split(" "):
             node = self._root
             for char in word:
@@ -61,8 +60,7 @@ class Trie:
                 return []
             node = child
 
-        # Objects are already unique and in deterministic first-insertion
-        # order. No sorting or scan of unrelated trie branches is required.
+        # Return matching objects in insertion order without scanning other branches
         return list(node.objects)
 
     def __len__(self):
