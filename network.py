@@ -4,7 +4,9 @@ from exceptions import UnknownLineError, UnknownStationError, InvalidPredictionE
 from heap import Heap
 from trie import Trie
 
+
 class Network:
+    # Initialise the network and create dictionaries and indexes
     def __init__(self):
         self.lines = {}
         self.stations = {}
@@ -14,6 +16,7 @@ class Network:
         self._station_line_heaps = {}
         self._train_heaps = {}
 
+    # Normalise text to make station name searches consistent
     @staticmethod
     def _normalise(text):
         text = unicodedata.normalize("NFKD", text).casefold()
@@ -21,15 +24,18 @@ class Network:
         text = re.sub(r"[^a-z0-9]+", " ", text)
         return " ".join(text.split())
 
+    # Add a line to the network
     def add_line(self, line):
         self.lines[line.line_id] = line
 
+    # Retrieve a line using its ID
     def get_line(self, line_id):
         try:
             return self.lines[line_id]
         except KeyError:
             raise UnknownLineError(f"Unknown line: {line_id}") from None
 
+    # Rebuild the station trie using the current station records
     def _rebuild_station_trie(self):
         """Rebuild the name index from canonical station records.
 
@@ -43,24 +49,28 @@ class Network:
                 trie.insert(normalised, current_station)
         self._station_trie = trie
 
+    # Add or replace a station and update the station name index
     def add_station(self, station):
         # Replace by station_id, then rebuild the derived name index. This
         # keeps the trie synchronised even when the station name changes.
         self.stations[station.station_id] = station
         self._rebuild_station_trie()
 
+    # Retrieve a station using its ID
     def get_station(self, station_id):
         try:
             return self.stations[station_id]
         except KeyError:
             raise UnknownStationError(f"Unknown station: {station_id}") from None
 
+    # Add a prediction to the appropriate heap index
     @staticmethod
     def _add_to_index(index, key, prediction):
         if key not in index:
             index[key] = Heap()
         index[key].push(prediction.time_to_station, prediction)
 
+    # Add a prediction to all relevant indexes
     def add_prediction(self, prediction):
         station_id, line_id = prediction.naptan_id, prediction.line_id
         train_key = (prediction.vehicle_id, line_id)
@@ -69,6 +79,7 @@ class Network:
         self._add_to_index(self._station_line_heaps, (station_id, line_id), prediction)
         self._add_to_index(self._train_heaps, train_key, prediction)
 
+    # Search for stations whose names start with the given prefix
     def search_by_prefix(self, prefix):
         if not isinstance(prefix, str):
             return []
@@ -81,6 +92,7 @@ class Network:
             current[station.station_id] = self.stations[station.station_id]
         return sorted(current.values(), key=lambda s: s.station_name.casefold())
 
+    # Retrieve the k smallest predictions from a specified index
     @staticmethod
     def _query(index, key, k):
         if not isinstance(k, int) or k < -1:
@@ -90,14 +102,17 @@ class Network:
             return []
         return heap.ksmallest(k)
 
+    # Get the next arrivals at a particular station
     def next_arrivals_by_station(self, station_id, k):
         self.get_station(station_id)
         return self._query(self._station_heaps, station_id, k)
 
+    # Get the next arrivals on a particular line
     def next_arrivals_by_line(self, line_id, k):
         self.get_line(line_id)
         return self._query(self._line_heaps, line_id, k)
 
+    # Get the next arrivals for a station on a particular line
     def next_arrivals_by_station_and_line(self, station_id, line_id, k):
         self.get_station(station_id)
         line = self.get_line(line_id)
@@ -105,9 +120,11 @@ class Network:
             raise InvalidPredictionError("The specified line does not serve this station")
         return self._query(self._station_line_heaps, (station_id, line_id), k)
 
+    # Get the next stations for a particular train on a given line
     def next_stations_by_train(self, vehicle_id, line_id, k):
         self.get_line(line_id)
         return self._query(self._train_heaps, (vehicle_id, line_id), k)
 
+    # Return a readable representation showing the number of lines and stations
     def __repr__(self):
         return f"Network(lines={len(self.lines)}, stations={len(self.stations)})"
